@@ -1,7 +1,7 @@
 name = "Ruby"
 version = "0.1.0"
 keywords = ["math", "hardware"]
-defaultTargets = ["Ruby", "Toggler", "Adder", "Subtractor", "Comparator", "Mux", "TwoSorter", "BatchersBitonicMerger"]
+defaultTargets = ["Ruby", "Toggler", "Adder", "Subtractor", "Comparator", "Mux", "TwoSorter", "BatchersBitonicMerger", "Decoder"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
@@ -39,3 +39,6 @@ name = "TwoSorter"
 
 [[lean_lib]]
 name = "BatchersBitonicMerger"
+
+[[lean_lib]]
+name = "Decoder"
