@@ -226,7 +226,7 @@ theorem ADDER_correct_1 (cin carryOut : Bit) (a b sum : List.Vector Bit 1) (t : 
        rcases sum with ⟨ _ | ⟨ sum, _ | ⟨ sum, _ | sum ⟩ ⟩ ⟩ <;> simp_all +decide [ List.Vector.map ] ;
        · contradiction;
        · simp_all +decide [ List.Vector.head, Ruby.vectorToBitVec ];
-         simp_all +decide [ List.Vector.get ];
+         simp_all +decide;
          grind;
        · grind;
        · grind +ring;

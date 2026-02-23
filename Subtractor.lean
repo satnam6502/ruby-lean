@@ -53,22 +53,21 @@ theorem FULL_SUBTRACTOR_eq (cin : Ruby.Bit) (a b : Ruby.Bit) (sum cout : Ruby.Bi
 
 theorem vectorToBitVec_not (n : Nat) (v : List.Vector Bool n) :
   (Ruby.vectorToBitVec (List.Vector.map (fun x => !x) v)).toNat = 2^n - 1 - (Ruby.vectorToBitVec v).toNat := by
-    -- The sum of the terms (if !v[i] then 2^i.val else 0) over all i is (2^n - 1) - sum of 2^i.val where v[i] is true.
-    have h_sum_neg : ∑ i : Fin n, (if !v.get i then 2^i.val else 0) = (2^n - 1) - ∑ i : Fin n, (if v.get i then 2^i.val else 0) := by
-      have h_sum_neg : ∑ i : Fin n, (if !v.get i then 2^i.val else 0) = ∑ i : Fin n, 2^i.val - ∑ i : Fin n, (if v.get i then 2^i.val else 0) := by
-        exact eq_tsub_of_add_eq ( by rw [ ← Finset.sum_add_distrib ] ; exact Finset.sum_congr rfl fun _ _ => by cases v.get ‹_› <;> simp +decide );
-      rw [ h_sum_neg, ← Finset.sum_range ];
-      rw [ Nat.geomSum_eq ] <;> norm_num;
-    unfold Ruby.vectorToBitVec; simp +decide ;
-    convert congr_arg ( · % 2 ^ n ) h_sum_neg using 1;
-    · grind +ring;
-    · rw [ Nat.mod_eq_of_lt ];
-      · rw [ Nat.mod_eq_of_lt ];
-        exact lt_of_le_of_lt ( Nat.sub_le _ _ ) ( Nat.sub_lt ( by norm_num ) ( by norm_num ) );
-      · refine' lt_of_le_of_lt ( Finset.sum_le_sum fun _ _ => _ ) _;
-        use fun i => 2 ^ ( i : ℕ );
-        · split_ifs <;> norm_num;
-        · exact Nat.recOn n ( by norm_num ) fun n ih => by norm_num [ Fin.sum_univ_castSucc, pow_succ' ] at * ; linarith;
+  induction n with
+  | zero => rfl
+  | succ k ih =>
+    have hh : (List.Vector.map (fun x => !x) v).head = !(v.head) := by
+      obtain ⟨l, hl⟩ := v; cases l with | nil => simp at hl | cons _ _ => rfl
+    have ht : (List.Vector.map (fun x => !x) v).tail = List.Vector.map (fun x => !x) v.tail := by
+      obtain ⟨l, hl⟩ := v; cases l with | nil => simp at hl | cons _ _ => rfl
+    change (if (List.Vector.map (fun x => !x) v).head then 1 else 0) +
+           2 * (vectorToBitVec (List.Vector.map (fun x => !x) v).tail).toNat =
+           2 ^ (k + 1) - 1 -
+           ((if v.head then 1 else 0) + 2 * (vectorToBitVec v.tail).toNat)
+    rw [hh, ht, ih v.tail]
+    have hlt : (vectorToBitVec v.tail).toNat < 2 ^ k := (vectorToBitVec v.tail).isLt
+    have hp : 2 ^ (k + 1) = 2 * 2 ^ k := by ring
+    rw [hp]; cases v.head <;> simp <;> omega
 
 theorem COL_map_input {α β γ : Type} (n : Nat) (ngt0 : n > 0) (R : Rel (α × β) (γ × α)) (f : β → β) :
   ∀ (cin : α) (v : List.Vector β n) (out : List.Vector γ n × α),

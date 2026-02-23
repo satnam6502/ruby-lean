@@ -13,42 +13,42 @@ namespace Ruby
 abbrev Bit := Nat → Bool
 
 -- A wire that has a constant value of false.
-  def const0 (_ : Nat) : Bool := false
+def const0 (_ : Nat) : Bool := false
 
 -- A wire that has a constant value of true.
-  def const1 (_ : Nat) : Bool := true
+def const1 (_ : Nat) : Bool := true
 
 -- An invertor is a gate that relates the output b to the negation of the input a.
-  def INV : Rel (Nat → Bool) (Nat → Bool) := fun a b => ∀ t, b t = !(a t)
+def INV : Rel Bit Bit := fun i o => ∀ t, o t = !(i t)
 
-example : INV const0 const1 := by simp [INV, const0, const1]
+example : INV const0 const1 := fun _ => rfl
 
-example : INV const1 const0 := by simp [INV, const0, const1]
+example : INV const1 const0 := fun _ => rfl
 
 -- An AND gate is a gate that relates the output c to the logical conjunction of the inputs a and b.
-  def AND : Rel (Bit × Bit) Bit := fun (a, b) c => ∀ t, c t = ((a t) && (b t))
+def AND : Rel (Bit × Bit) Bit := fun (a, b) c => ∀ t, c t = ((a t) && (b t))
 
-example : AND (const0, const0) const0 := by simp [AND, const0]
+example : AND (const0, const0) const0 := fun _ => rfl
 
-example : AND (const0, const1) const0 := by simp [AND, const0, const1]
+example : AND (const0, const1) const0 := fun _ => rfl
 
-example : AND (const1, const0) const0 := by simp [AND, const0, const1]
+example : AND (const1, const0) const0 := fun _ => rfl
 
-example : AND (const1, const1) const1 := by simp [AND, const1]
+example : AND (const1, const1) const1 := fun _ => rfl
 
 -- An NAND gate is a gate that relates the output c to the logical negation of the conjunction of the inputs a and b.
-  def NAND : Rel (Bit × Bit) Bit := fun (a, b) c => ∀ t, c t = !((a t) && (b t))
+def NAND : Rel (Bit × Bit) Bit := fun (a, b) c => ∀ t, c t = !((a t) && (b t))
 
 -- An OR gate is a gate that relates the output c to the logical disjunction of the inputs a and b.
-  def OR : Rel (Bit × Bit) Bit := fun (a, b) c => ∀ t, c t = ((a t) || (b t))
+def OR : Rel (Bit × Bit) Bit := fun (a, b) c => ∀ t, c t = ((a t) || (b t))
 
-example : OR (const0, const0) const0 := by simp [OR, const0]
+example : OR (const0, const0) const0 := fun _ => rfl
 
-example : OR (const0, const1) const1 := by simp [OR, const0, const1]
+example : OR (const0, const1) const1 := fun _ => rfl
 
-example : OR (const1, const0) const1 := by simp [OR, const0, const1]
+example : OR (const1, const0) const1 := fun _ => rfl
 
-example : OR (const1, const1) const1 := by simp [OR, const1]
+example : OR (const1, const1) const1 := fun _ => rfl
 
 -- A NOR gate is a gate that relates the output c to the logical negation of the disjunction of the inputs a and b.
   def NOR : Rel (Bit × Bit) Bit := fun (a, b) c => ∀ t, c t = !((a t) || (b t))
@@ -57,20 +57,20 @@ example : OR (const1, const1) const1 := by simp [OR, const1]
   def XOR : Rel (Bit × Bit) Bit :=
     fun (a, b) c => ∀ t, c t = (xor (a t) (b t))
 
-example : XOR (const0, const0) const0 := by simp [XOR, const0]
+example : XOR (const0, const0) const0 := fun _ => rfl
 
-example : XOR (const0, const1) const1 := by simp [XOR, const0, const1]
+example : XOR (const0, const1) const1 := fun _ => rfl
 
-example : XOR (const1, const0) const1 := by simp [XOR, const0, const1]
+example : XOR (const1, const0) const1 := fun _ => rfl
 
-example : XOR (const1, const1) const0 := by simp [XOR, const0, const1]
+example : XOR (const1, const1) const0 := fun _ => rfl
 
 -- A XNOR gate is a gate that relates the output c to the logical negation of the exclusive-or of the inputs a and b.
   def XNOR : Rel (Bit × Bit) Bit :=
     fun (a, b) c => ∀ t, c t = !(xor (a t) (b t))
 
 -- Define an infix left-to-rightoperator for sequential composition of relations (circuits).
-  infixr:60 " ⨾ " => Relation.Comp
+infixr:60 " ⨾ " => Relation.Comp
 
 -- Parallel composition: (a, c) relates to (b, d) iff R a b ∧ S c d
   def parComp (R : Rel α β) (S : Rel γ δ) : Rel (α × γ) (β × δ) :=
@@ -83,17 +83,15 @@ infixr:55 " ‖ " => parComp
 
 -- Prove that the NAND gate has the correct behaviour.
   theorem alt_NAND_correct : ∀ (a b c : Bit) (t : Nat), alt_NAND (a, b) c → c t = !((a t) && (b t)) := by
-    intro a b c t h
-    simp only [alt_NAND, Relation.Comp, AND, INV] at h
-    obtain ⟨d, hd1, hd2⟩ := h
+    intro a b c t ⟨d, hd1, hd2⟩
     rw [hd2 t, hd1 t]
 
 def alt2_NAND : Rel ((Nat → Bool) × (Nat → Bool)) (Nat → Bool) := fun (a, b) c => ∃ x, AND (a, b) x ∧ INV x c
 
 -- Define a unit delay element for which the output is related to the input one clock cycle ago.
-  -- A default value defines the output at t=0 (i.e. the reset value).
-  def DELAY {α : Type} : α → Rel (Nat → α) (Nat → α) :=
-    fun resetValue a b => ∀ t, if t = 0 then b 0 = resetValue else b t = a (t - 1)
+-- A default value defines the output at t=0 (i.e. the reset value).
+def DELAY {α : Type} : α → Rel (Nat → α) (Nat → α) :=
+    fun resetValue d q => ∀ t, if t = 0 then q 0 = resetValue else q t = d (t - 1)
 
 /-  Define a loop combinator for expressing feedback loops for sequential circuits.
       This combinator relates values (a, b) on the input to a circuit r to (c, d) of the outout of circuit r.
@@ -223,8 +221,14 @@ def BFLY (r : Rel (List.Vector α 2) (List.Vector α 2)) :
 
 -- To help specify a theorem about the correctness of the ADDER we define a function that converts a Vector of Bool to a BitVec.
 def vectorToBitVec (v : List.Vector Bool n) : BitVec n :=
-  let val := Finset.univ.sum (fun (i : Fin n) => if List.Vector.get v i then 2^i.val else 0)
-  BitVec.ofNat n val
+  match n, v with
+  | 0, _ => 0
+  | k + 1, w =>
+    let tailBV := vectorToBitVec w.tail
+    ⟨(if w.head then 1 else 0) + 2 * tailBV.toNat, by
+      have h : tailBV.toNat < 2 ^ k := tailBV.isLt
+      have : 2 ^ (k + 1) = 2 * 2 ^ k := by ring
+      cases w.head <;> simp <;> linarith⟩
 
 /-
 The value of a BitVec of size 1.
@@ -232,40 +236,30 @@ The value of a BitVec of size 1.
 theorem vectorToBitVec_one (x : Bool) (v : List.Vector Bool 1) :
   v = List.Vector.cons x List.Vector.nil →
   (Ruby.vectorToBitVec v).toNat = if x then 1 else 0 := by
-    native_decide +revert
+    rintro rfl; rfl
 
 /-
 The value of a BitVec formed from a cons vector is the head plus twice the tail.
 -/
 theorem vectorToBitVec_cons {n : Nat} (x : Bool) (xs : List.Vector Bool n) :
-  (Ruby.vectorToBitVec (List.Vector.cons x xs)).toNat = (if x then 1 else 0) + 2 * (Ruby.vectorToBitVec xs).toNat := by
-    unfold Ruby.vectorToBitVec; norm_num [Fin.sum_univ_succ, pow_succ']; ring_nf
-    rw [← Finset.sum_filter, ← Finset.sum_filter]
-    norm_num [mul_assoc, mul_comm, mul_left_comm, Finset.mul_sum _ _ _]
-    rw [← Finset.mul_sum _ _ _, Nat.add_mod, Nat.mul_mod_mul_left]
-    have hlt := Nat.mod_lt (∑ i : Fin n with xs.get i = true, 2 ^ (↑i : ℕ)) (show 0 < 2 ^ n by positivity)
-    split_ifs <;> norm_num <;> (rw [Nat.mod_eq_of_lt]; linarith)
+  (Ruby.vectorToBitVec (List.Vector.cons x xs)).toNat = (if x then 1 else 0) + 2 * (Ruby.vectorToBitVec xs).toNat := rfl
 
 /-
 Decomposition of vectorToBitVec into head and tail.
 -/
 theorem vectorToBitVec_head_tail {n : Nat} (v : List.Vector Bool (n + 1)) :
-  (Ruby.vectorToBitVec v).toNat = (if List.Vector.head v then 1 else 0) + 2 * (Ruby.vectorToBitVec (List.Vector.tail v)).toNat := by
-    convert Ruby.vectorToBitVec_cons _ _;
-    cases v ; aesop
+  (Ruby.vectorToBitVec v).toNat = (if List.Vector.head v then 1 else 0) + 2 * (Ruby.vectorToBitVec (List.Vector.tail v)).toNat := rfl
 
 /-
 Value of empty vector BitVec.
 -/
 theorem vectorToBitVec_nil (v : List.Vector Bool 0) :
-  (Ruby.vectorToBitVec v).toNat = 0 := by
-    rfl
+  (Ruby.vectorToBitVec v).toNat = 0 := rfl
 
 /-
 Value of singleton vector BitVec using head.
 -/
 theorem vectorToBitVec_one_head (v : List.Vector Bool 1) :
-  (Ruby.vectorToBitVec v).toNat = if List.Vector.head v then 1 else 0 := by
-    native_decide +revert
+  (Ruby.vectorToBitVec v).toNat = if List.Vector.head v then 1 else 0 := rfl
 
 end Ruby
