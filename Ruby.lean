@@ -82,8 +82,7 @@ example : XOR (const1, const1) const0 := fun _ => rfl
 -/
 infixr:60 " ⨾ " => Relation.Comp
 
-/- Series composition is associative.
--/
+/- Series composition is associative. -/
 theorem series_assoc {R : Rel α β} {S : Rel β γ} {T : Rel γ δ} :
     (R ⨾ S) ⨾ T = R ⨾ (S ⨾ T) := Relation.comp_assoc
 
@@ -94,6 +93,10 @@ postfix:max "⁻¹" => flip
 theorem ruby_inv_seq {α β γ : Type} (R : Rel α β) (S : Rel β γ) :
   (R ⨾ S)⁻¹ = (S⁻¹ ⨾ R⁻¹) := by exact Relation.flip_comp
 
+/- Algebraic law: Inverse is its own inverse. (R⁻¹)⁻¹ = R. -/
+theorem ruby_inv_inv {α β : Type} (R : Rel α β) :
+  (R⁻¹)⁻¹ = R := rfl
+
 /- Parallel composition: (a, c) relates to (b, d) iff R a b ∧ S c d -/
 def parComp (R : Rel α β) (S : Rel γ δ) : Rel (α × γ) (β × δ) :=
     fun (a, c) (b, d) => R a b ∧ S c d
@@ -103,6 +106,17 @@ infixr:55 " ‖ " => parComp
 /- Algebraic law: The inverse of a parallel composition is the parallel composition of the inverses. (R ‖ S)⁻¹ = (R⁻¹ ‖ S⁻¹) -/
 theorem ruby_inv_par {α β γ δ : Type} (R : Rel α β) (S : Rel γ δ) :
   (R ‖ S)⁻¹ = (R⁻¹ ‖ S⁻¹) := by ext ⟨b, d⟩ ⟨a, c⟩; rfl
+
+/- The identity relation is the relation that relates every element to itself. -/
+def id : Rel α α := (· = ·)
+
+/- Algebraic law: Left identity for series composition. idRel ⨾ R = R. -/
+theorem ruby_id_seq_left {α β : Type} (R : Rel α β) :
+  id ⨾ R = R := Relation.eq_comp
+
+/- Algebraic law: Right identity for series composition. R ⨾ idRel = R. -/
+theorem ruby_id_seq_right {α β : Type} (R : Rel α β) :
+  R ⨾ id = R := Relation.comp_eq
 
 /- Define a NAND gate by serially composing an AND gate and an INV gate. -/
   def alt_NAND := AND ⨾ INV
