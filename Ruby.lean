@@ -118,6 +118,10 @@ theorem ruby_id_seq_left {α β : Type} (R : Rel α β) :
 theorem ruby_id_seq_right {α β : Type} (R : Rel α β) :
   R ⨾ id = R := Relation.comp_eq
 
+/- Algebraic law: The inverse of identity is identity. id⁻¹ = id. -/
+theorem ruby_inv_id {α : Type} :
+  (id : Rel α α)⁻¹ = id := by ext a b; exact eq_comm
+
 /- Define a NAND gate by serially composing an AND gate and an INV gate. -/
   def alt_NAND := AND ⨾ INV
 
