@@ -6,9 +6,9 @@ import Mathlib.Logic.Relation
 
 namespace Ruby
 
--- TO help verify ADDER is correct, let us first define a function to model a ripple
--- carry adder and prove it correct.
-
+/- To help verify ADDER is correct, let us first define a function to model a ripple
+  carry adder and prove it correct.
+-/
 def half_adder : Bool × Bool → Bool × Bool := fun (a, b) => (a && b, xor a b)
 
 def full_adder : Bool × (Bool × Bool) → Bool × Bool := fun (cin, (a, b)) =>
@@ -27,7 +27,8 @@ def ripple_carry_adder : (n : Nat) → n > 0 → Bool × List.Vector (Bool × Bo
     let (rest, cout) := ripple_carry_adder (n + 1) (Nat.succ_pos n) (c0, ab.tail)
     (List.Vector.cons s0 rest, cout)
 
--- A half adder is made by duplicating the input and sending each fork to the parallel composition of AND and XOR.
+/- A half adder is made by duplicating the input and sending each fork to the parallel composition of AND and XOR.
+-/
 def HALF_ADDER := FORK ⨾ (AND ‖ XOR)
 
 macro "gate_simp" : tactic => `(tactic| simp [Relation.Comp, parComp, HALF_ADDER, FORK, AND, XOR, OR, const0, const1])
@@ -48,21 +49,19 @@ theorem HALF_ADDER_correct : ∀ (a b sum carry : Nat → Bool), HALF_ADDER (a, 
     intro t
     exact ⟨hXor t, hAnd t⟩
 
--- To help define a full-adder in point-free style we need combinators to perform some wire reorganization.
+/- To help define a full-adder in point-free style we need combinators to perform some wire reorganization. -/
   def REORG1 {α β γ : Type} : Rel (α × (β × γ)) (β × (α × γ)) := fun (cin, (c1, s1)) (c1', (cin', s1')) => c1 = c1' ∧ cin = cin' ∧ s1 = s1'
 
-def REORG2 {α β γ : Type} : Rel (α × (β × γ)) ((α × β) × γ) := fun (c1, (c2, sum)) ((c1', c2'), sum') => c1 = c1' ∧ c2 = c2' ∧ sum = sum'
+  def REORG2 {α β γ : Type} : Rel (α × (β × γ)) ((α × β) × γ) := fun (c1, (c2, sum)) ((c1', c2'), sum') => c1 = c1' ∧ c2 = c2' ∧ sum = sum'
 
 example : REORG1 (0, (1, 2)) (1, (0, 2)) := by simp [REORG1]
 
--- Swap the two carries
+/- Swap the two carries -/
   example : REORG2 (0, (1, 2)) ((0, 1), 2) := by simp [REORG2]
 
--- Move two carries into first tuple
+/- Move two carries into first tuple -/
 
-/-
-Arithmetic correctness of a full adder in terms of natural numbers.
--/
+/- Arithmetic correctness of a full adder in terms of natural numbers. -/
 theorem full_adder_bool_arith (a b cin sum cout : Bool) :
   (sum = xor a (xor b cin)) →
   (cout = ((a && b) || (cin && (xor a b)))) →
@@ -70,12 +69,12 @@ theorem full_adder_bool_arith (a b cin sum cout : Bool) :
   (if sum then 1 else 0) + 2 * (if cout then 1 else 0) := by
     grind
 
-  -- A full-adder can be defined by composing two half-adders and then composing with an OR gate.
+  /- A full-adder can be defined by composing two half-adders and then composing with an OR gate. -/
   def FULL_ADDER := SND HALF_ADDER ⨾ REORG1 ⨾ SND HALF_ADDER ⨾ REORG2 ⨾ FST OR ⨾ SWAP
 
--- example : FULL_ADDER (const0, (const0, const0)) (const0, const0) := by simp [Relation.Comp, parComp, HALF_ADDER, FULL_ADDER, REORG1, REORG2, FST, SND, OR, const0]
+  -- example : FULL_ADDER (const0, (const0, const0)) (const0, const0) := by simp [Relation.Comp, parComp, HALF_ADDER, FULL_ADDER, REORG1, REORG2, FST, SND, OR, const0]
 
-  -- A helper that decomposes FULL_ADDER into its internal half-adder wires.
+  /- A helper that decomposes FULL_ADDER into its internal half-adder wires. -/
   private theorem full_adder_wires :
       ∀ (a b cin sum carryOut : Nat → Bool),
       FULL_ADDER (cin, (a, b)) (sum, carryOut) →
@@ -97,7 +96,7 @@ theorem full_adder_bool_arith (a b cin sum cout : Bool) :
     obtain ⟨rfl, rfl⟩ := hSWAP
     exact ⟨w1b, w1c, w3b, hHA1, hHA2, hOR⟩
 
--- A proof that the FULL_ADDER circuit implements the correct behaviour of a full-adder.
+  /- A proof that the FULL_ADDER circuit implements the correct behaviour of a full-adder. -/
   theorem FULL_ADDER_sum_correct : ∀ (a b cin sum carryOut : Nat → Bool) (t : Nat), FULL_ADDER (cin, (a, b)) (sum, carryOut) →
         sum t      = xor (a t) (xor (b t) (cin t)) := by
     intro a b cin sum carryOut t h
@@ -118,7 +117,7 @@ theorem full_adder_bool_arith (a b cin sum cout : Bool) :
     set x := a t; set y := b t; set z := cin t
     cases x <;> cases y <;> cases z <;> rfl
 
-  -- A proof that the FULL_ADDER circuit implements the correct behaviour of a full-adder.
+  /- A proof that the FULL_ADDER circuit implements the correct behaviour of a full-adder. -/
   theorem FULL_ADDER_correct : ∀ (a b cin sum carryOut : Nat → Bool), FULL_ADDER (cin, (a, b)) (sum, carryOut) →
        (∀ t, sum t      = xor (a t) (xor (b t) (cin t)) ∧
              carryOut t = (a t && b t) || (cin t) && (xor (a t) (b t))) := by
@@ -149,7 +148,6 @@ theorem FULL_ADDER_alt_correct : ∀ (a b cin sum carryOut : Nat → Bool) (t : 
       cases a t <;> cases b t <;> cases cin t <;> rfl
     · rw [hOR t, (h1 t).2, (h2 t).2, (h1 t).1]
 
--- A ripple-carry adder is made by making a COL of FULL_ADDERs.
 /-
 
 │
@@ -199,12 +197,11 @@ Key:
 - Final carryOut emerges from top (overflow bit)
 -/
 
+/- A ripple-carry adder is made by making a COL of FULL_ADDERs. -/
 def ADDER (n : Nat) (ngt0 : n > 0) : Rel (Bit × List.Vector (Bit × Bit) n) (List.Vector Bit n × Bit) :=
     COL ngt0 FULL_ADDER
 
-/-
-Correctness of 1-bit ADDER.
--/
+/- Correctness of 1-bit ADDER. -/
 theorem ADDER_correct_1 (cin carryOut : Bit) (a b sum : List.Vector Bit 1) (t : Nat) :
    ADDER 1 Nat.zero_lt_one (cin, List.Vector.zipWith (fun x y => (x, y)) a b) (sum, carryOut) →
    let a' := vectorToBitVec (List.Vector.map (fun x => x t) a)
@@ -233,9 +230,7 @@ theorem ADDER_correct_1 (cin carryOut : Bit) (a b sum : List.Vector Bit 1) (t : 
      · grind +ring;
      · grind +ring
 
-/-
-Inductive step for ADDER correctness.
--/
+/- Inductive step for ADDER correctness. -/
 theorem ADDER_correct_step (n : Nat) (ngt0 : n > 0) :
   (∀ (cin carryOut : Bit) (a b sum : List.Vector Bit n) (t : Nat),
      ADDER n ngt0 (cin, List.Vector.zipWith (fun x y => (x, y)) a b) (sum, carryOut) →

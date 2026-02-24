@@ -17,8 +17,8 @@ def TWO_SORTER (n : Nat) (ngt0 : n > 0) : Rel (List.Vector (Bit × Bit) n) (List
         MUX2_1 (a_gt_b, ((ab.get i).1, (ab.get i).2)) (out.get i).1 ∧
         MUX2_1 (not_a_gt_b, ((ab.get i).1, (ab.get i).2)) (out.get i).2
 
--- Correctness of the TWO_SORTER: for n-bit unsigned inputs a and b, the first output
--- component is min(a, b) and the second output component is max(a, b).
+/- Correctness of the TWO_SORTER: for n-bit unsigned inputs a and b, the first output
+   component is min(a, b) and the second output component is max(a, b). -/
 theorem TWO_SORTER_correct : ∀ (n : Nat) (ngt0 : n > 0) (a b : List.Vector Bit n)
     (out : List.Vector (Bit × Bit) n) (t : Nat),
   TWO_SORTER n ngt0 (List.Vector.zipWith (fun x y => (x, y)) a b) out →
@@ -48,9 +48,9 @@ theorem TWO_SORTER_correct : ∀ (n : Nat) (ngt0 : n > 0) (a b : List.Vector Bit
     · congr! 1;
       ext i; aesop;
 
--- TWO_SORTER_FLAT wraps TWO_SORTER to work on a 2-element vector of n-bit words
--- rather than an n-element vector of bit-pairs.
--- It transposes the input (2×n → n×2), applies TWO_SORTER, then transposes back (n×2 → 2×n).
+/- TWO_SORTER_FLAT wraps TWO_SORTER to work on a 2-element vector of n-bit words
+   rather than an n-element vector of bit-pairs.
+   It transposes the input (2×n → n×2), applies TWO_SORTER, then transposes back (n×2 → 2×n). -/
 def TWO_SORTER_FLAT (n : Nat) (ngt0 : n > 0) : Rel (List.Vector (List.Vector Bit n) 2)
                                                    (List.Vector (List.Vector Bit n) 2) :=
   fun input output =>
@@ -64,8 +64,8 @@ def TWO_SORTER_FLAT (n : Nat) (ngt0 : n > 0) : Rel (List.Vector (List.Vector Bit
       (∀ i : Fin n, (output.get ⟨0, by omega⟩).get i = (pairs_out.get i).1) ∧
       (∀ i : Fin n, (output.get ⟨1, by omega⟩).get i = (pairs_out.get i).2)
 
--- Correctness of TWO_SORTER_FLAT: the output word at index 0 is min(a, b)
--- and the output word at index 1 is max(a, b).
+/- Correctness of TWO_SORTER_FLAT: the output word at index 0 is min(a, b)
+   and the output word at index 1 is max(a, b). -/
 theorem TWO_SORTER_FLAT_correct : ∀ (n : Nat) (ngt0 : n > 0)
     (input output : List.Vector (List.Vector Bit n) 2) (t : Nat),
   TWO_SORTER_FLAT n ngt0 input output →

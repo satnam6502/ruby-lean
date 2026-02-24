@@ -7,17 +7,21 @@ import Mathlib.Logic.Relation
 
 namespace Ruby
 
--- Batcher's bitonic merger is a bitonic merger which takes an input vector of length 2^(n+1).
--- The first half of the input vector, size 2^n, should have increasing values.
--- The second half of the input vector, size 2^n, should have decreasing values.
--- The result of the bitonic merger is a sorted vector of length 2^(n+1), which represents the inputs
--- merged and sorted into increasing order.
+/-
+Batcher's bitonic merger is a bitonic merger which takes an input vector of length 2^(n+1).
+The first half of the input vector, size 2^n, should have increasing values.
+The second half of the input vector, size 2^n, should have decreasing values.
+The result of the bitonic merger is a sorted vector of length 2^(n+1), which represents the inputs
+merged and sorted into increasing order.
+-/
 def BATCHER_BITONIC_MERGER (n : Nat) (ngt0 : n > 0) := BFLY (TWO_SORTER_FLAT n ngt0)
 
--- Correctness of Batcher's bitonic merger:
--- Given a bitonic input (first half ascending, second half descending),
--- the output is sorted (non-decreasing).
--- Helper: the word value of the i-th element of a vector at time t.
+/-
+Correctness of Batcher's bitonic merger:
+Given a bitonic input (first half ascending, second half descending),
+the output is sorted (non-decreasing).
+Helper: the word value of the i-th element of a vector at time t.
+-/
 def wordVal {n k : Nat} (v : List.Vector (List.Vector Bit n) k) (i : Fin k) (t : Nat) : Nat :=
   (vectorToBitVec (List.Vector.map (fun x => x t) (v.get i))).toNat
 
@@ -43,9 +47,19 @@ private theorem bfly_base_case (n : Nat) (ngt0 : n > 0)
   intro i j hij
   fin_cases i <;> fin_cases j <;> simp_all
 
--- Correctness of Batcher's bitonic merger:
--- Given a bitonic input (first half ascending, second half descending),
--- the output is sorted (non-decreasing).
+/-
+Correctness of Batcher's bitonic merger:
+Given a bitonic input (first half ascending, second half descending),
+the output is sorted (non-decreasing).
+BFLY r (m+1) = h ▸ (ILV (BFLY r m) ⨾ EVENS r)
+The proof requires three key properties of Batcher's algorithm:
+1. UNRIFFLE applied to a bitonic sequence produces two bitonic subsequences
+   (the even-indexed and odd-indexed elements each form a bitonic sequence).
+2. By the inductive hypothesis, BFLY r m sorts each bitonic half.
+3. After RIFFLE (interleaving the two sorted halves) and EVENS r
+   (compare-swap on adjacent pairs), the result is sorted.
+   This follows from the "0-1 principle" and properties of bitonic sequences.
+-/
 theorem BATCHER_BITONIC_MERGER_correct : ∀ (n : Nat) (ngt0 : n > 0) (m : Nat)
     (input output : List.Vector (List.Vector Bit n) (2 ^ (m + 1))) (t : Nat),
   IsBitonic input t →
@@ -58,14 +72,6 @@ theorem BATCHER_BITONIC_MERGER_correct : ∀ (n : Nat) (ngt0 : n > 0) (m : Nat)
     exact bfly_base_case n ngt0 input output t h_merger
   | succ m ih =>
     intro input output t h_bitonic h_merger
-    -- BFLY r (m+1) = h ▸ (ILV (BFLY r m) ⨾ EVENS r)
-    -- The proof requires three key properties of Batcher's algorithm:
-    -- 1. UNRIFFLE applied to a bitonic sequence produces two bitonic subsequences
-    --    (the even-indexed and odd-indexed elements each form a bitonic sequence).
-    -- 2. By the inductive hypothesis, BFLY r m sorts each bitonic half.
-    -- 3. After RIFFLE (interleaving the two sorted halves) and EVENS r
-    --    (compare-swap on adjacent pairs), the result is sorted.
-    --    This follows from the "0-1 principle" and properties of bitonic sequences.
     sorry
 
 end Ruby

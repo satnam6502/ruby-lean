@@ -7,10 +7,10 @@ import Mathlib.Logic.Relation
 
 namespace Ruby
 
--- A COMPARATOR uses a SUBTRACTOR to determine if a > b for two unsigned n-bit inputs.
--- The carry-in to the SUBTRACTOR is set to const0. With cin = 0, the SUBTRACTOR computes:
---   a + 2^n = b + diff + 2^n * borrowOut + 1
--- The borrowOut signal is 1 (true) iff a > b.
+/- A COMPARATOR uses a SUBTRACTOR to determine if a > b for two unsigned n-bit inputs.
+   The carry-in to the SUBTRACTOR is set to const0. With cin = 0, the SUBTRACTOR computes:
+   a + 2^n = b + diff + 2^n * borrowOut + 1
+   The borrowOut signal is 1 (true) iff a > b. -/
 def COMPARATOR (n : Nat) (ngt0 : n > 0) : Rel (List.Vector (Bit × Bit) n) Bit :=
   fun ab a_gt_b => ∃ diff, SUBTRACTOR n ngt0 (const0, ab) (diff, a_gt_b)
 

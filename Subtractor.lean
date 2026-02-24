@@ -7,15 +7,15 @@ import Mathlib.Logic.Relation
 
 namespace Ruby
 
--- A full subtractor cell is a FULL_ADDER with the b input inverted.
--- This exploits the two's complement identity: a - b = a + ~b + 1.
--- The SND (SND INV) combinator inverts just the b component of (cin, (a, b)).
+/- A full subtractor cell is a FULL_ADDER with the b input inverted.
+   This exploits the two's complement identity: a - b = a + ~b + 1.
+   The SND (SND INV) combinator inverts just the b component of (cin, (a, b)). -/
 def FULL_SUBTRACTOR := SND (SND INV) ⨾ FULL_ADDER
 
--- A ripple-borrow subtractor is made by making a COL of FULL_SUBTRACTORs.
--- To compute a - b, the carry-in must be set to const1 (representing the +1
--- in the identity a - b = a + ~b + 1).
--- borrowOut = 1 indicates no borrow (a >= b in unsigned).
+/- A ripple-borrow subtractor is made by making a COL of FULL_SUBTRACTORs.
+   To compute a - b, the carry-in must be set to const1 (representing the +1
+   in the identity a - b = a + ~b + 1).
+   borrowOut = 1 indicates no borrow (a >= b in unsigned). -/
 def SUBTRACTOR (n : Nat) (ngt0 : n > 0) : Rel (Bit × List.Vector (Bit × Bit) n) (List.Vector Bit n × Bit) :=
     COL ngt0 FULL_SUBTRACTOR
 
