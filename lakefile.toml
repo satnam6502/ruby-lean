@@ -10,6 +10,7 @@ relaxedAutoImplicit = false
 maxSynthPendingDepth = 3
 grind.warning = false
 maxRecDepth = 1000000
+maxHeartbeats = 1000000
 
 [[require]]
 name = "mathlib"

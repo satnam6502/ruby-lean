@@ -28,8 +28,7 @@ example : INV const0 const1 := fun _ => rfl
 
 example : INV const1 const0 := fun _ => rfl
 
-/- An AND gate is a gate that relates the output c to the logical conjunction of the inputs a and b.
--/
+/- An AND gate is a gate that relates the output c to the logical conjunction of the inputs a and b. -/
 def AND : Rel (Bit × Bit) Bit := fun (a, b) c => ∀ t, c t = ((a t) && (b t))
 
 example : AND (const0, const0) const0 := fun _ => rfl
@@ -243,7 +242,7 @@ def RIFFLE {n : Nat} : Rel (List.Vector α (2 * n)) (List.Vector α (2 * n))
 def UNRIFFLE {n : Nat} : Rel (List.Vector α (2 * n)) (List.Vector α (2 * n))
   := CHOP ⨾ UNZIP ⨾ UNHALVE
 
--- TWO applies r independently to each of the two halves of a 2n-element vector.
+/- TWO applies r independently to each of the two halves of a 2n-element vector. -/
 def TWO {n : Nat} (r : Rel (List.Vector α n) (List.Vector α n)) : Rel (List.Vector α (2 * n)) (List.Vector α (2 * n))
   := HALVE ⨾ MAP r ⨾ UNHALVE
 
@@ -279,7 +278,7 @@ def BFLY (r : Rel (List.Vector α 2) (List.Vector α 2)) :
     have h : 2 ^ (n + 2) = 2 * 2 ^ (n + 1) := by ring
     h ▸ (ILV (BFLY r n) ⨾ EVENS r)
 
--- To help specify a theorem about the correctness of the ADDER we define a function that converts a Vector of Bool to a BitVec.
+/- To help specify a theorem about the correctness of the ADDER we define a function that converts a Vector of Bool to a BitVec. -/
 def vectorToBitVec (v : List.Vector Bool n) : BitVec n :=
   match n, v with
   | 0, _ => 0
@@ -290,35 +289,25 @@ def vectorToBitVec (v : List.Vector Bool n) : BitVec n :=
       have : 2 ^ (k + 1) = 2 * 2 ^ k := by ring
       cases w.head <;> simp <;> linarith⟩
 
-/-
-The value of a BitVec of size 1.
--/
+/- The value of a BitVec of size 1. -/
 theorem vectorToBitVec_one (x : Bool) (v : List.Vector Bool 1) :
   v = List.Vector.cons x List.Vector.nil →
   (Ruby.vectorToBitVec v).toNat = if x then 1 else 0 := by
     rintro rfl; rfl
 
-/-
-The value of a BitVec formed from a cons vector is the head plus twice the tail.
--/
+/- The value of a BitVec formed from a cons vector is the head plus twice the tail. -/
 theorem vectorToBitVec_cons {n : Nat} (x : Bool) (xs : List.Vector Bool n) :
   (Ruby.vectorToBitVec (List.Vector.cons x xs)).toNat = (if x then 1 else 0) + 2 * (Ruby.vectorToBitVec xs).toNat := rfl
 
-/-
-Decomposition of vectorToBitVec into head and tail.
--/
+/- Decomposition of vectorToBitVec into head and tail. -/
 theorem vectorToBitVec_head_tail {n : Nat} (v : List.Vector Bool (n + 1)) :
   (Ruby.vectorToBitVec v).toNat = (if List.Vector.head v then 1 else 0) + 2 * (Ruby.vectorToBitVec (List.Vector.tail v)).toNat := rfl
 
-/-
-Value of empty vector BitVec.
--/
+/- Value of empty vector BitVec is 0. -/
 theorem vectorToBitVec_nil (v : List.Vector Bool 0) :
   (Ruby.vectorToBitVec v).toNat = 0 := rfl
 
-/-
-Value of singleton vector BitVec using head.
--/
+/- Value of singleton vector BitVec using head. -/
 theorem vectorToBitVec_one_head (v : List.Vector Bool 1) :
   (Ruby.vectorToBitVec v).toNat = if List.Vector.head v then 1 else 0 := rfl
 
