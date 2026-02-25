@@ -246,15 +246,21 @@ def ILV {n : Nat} (r : Rel (List.Vector α n) (List.Vector α n)) : Rel (List.Ve
 
 theorem halve_unhalve {n : Nat} {α : Type} :
     (HALVE ⨾ UNHALVE : Rel (List.Vector α (2 * n)) (List.Vector α (2 * n))) = id := by
-  ext v w; simp only [Relation.Comp, id]; unfold HALVE UNHALVE; constructor
+  unfold HALVE UNHALVE
+  ext v w; simp only [Relation.Comp, id]; constructor
   · rintro ⟨h, ⟨hh0, hh1⟩, hu0, hu1⟩
     apply List.Vector.ext; intro j; by_cases hjn : j.val < n
-    · have := hu0 ⟨j.val, hjn⟩; have := hh0 ⟨j.val, hjn⟩
-      have : (⟨j.val, by omega⟩ : Fin (2 * n)) = j := Fin.ext rfl; simp_all
+    · calc v.get j
+          = (h.get ⟨0, by omega⟩).get ⟨j.val, hjn⟩ := (hh0 ⟨j.val, hjn⟩).symm
+        _ = w.get j := (hu0 ⟨j.val, hjn⟩).symm
     · push_neg at hjn
-      have := hu1 ⟨j.val - n, by omega⟩; have := hh1 ⟨j.val - n, by omega⟩
-      have : (⟨n + (j.val - n), by omega⟩ : Fin (2 * n)) = j :=
-        Fin.ext (Nat.add_sub_cancel' hjn); simp_all
+      have hj : (⟨n + (j.val - n), by omega⟩ : Fin (2 * n)) = j :=
+        Fin.ext (Nat.add_sub_cancel' hjn)
+      calc v.get j
+          = v.get ⟨n + (j.val - n), by omega⟩ := congrArg v.get hj.symm
+        _ = (h.get ⟨1, by omega⟩).get ⟨j.val - n, by omega⟩ := (hh1 ⟨j.val - n, by omega⟩).symm
+        _ = w.get ⟨n + (j.val - n), by omega⟩ := (hu1 ⟨j.val - n, by omega⟩).symm
+        _ = w.get j := congrArg w.get hj
   · intro heq; subst heq
     have mk_bound (j : Fin 2) (i : Fin n) : j.val * n + i.val < 2 * n := by
       have := j.isLt; have := i.isLt; nlinarith
@@ -288,10 +294,13 @@ theorem unchop_chop {n : Nat} {α : Type} :
 
 theorem zip_unzip {n : Nat} {α : Type} :
     (ZIP ⨾ UNZIP : Rel (List.Vector (List.Vector α n) 2) (List.Vector (List.Vector α n) 2)) = id := by
-  ext v w; simp only [Relation.Comp, id]; unfold ZIP UNZIP; constructor
+  unfold ZIP UNZIP
+  ext v w; simp only [Relation.Comp, id]; constructor
   · rintro ⟨z, hz, hu⟩
     apply List.Vector.ext; intro j; apply List.Vector.ext; intro i
-    have := hz i j; have := hu j i; simp_all
+    calc (v.get j).get i
+        = (z.get i).get j := (hz i j).symm
+      _ = (w.get j).get i := (hu j i).symm
   · intro heq; subst heq
     exact ⟨List.Vector.ofFn (fun i => List.Vector.ofFn (fun j => (v.get j).get i)),
       fun i j => by simp [List.Vector.get_ofFn],
