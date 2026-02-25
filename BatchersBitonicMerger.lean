@@ -16,68 +16,16 @@ merged and sorted into increasing order.
 -/
 def BATCHER_BITONIC_MERGER (n : Nat) (ngt0 : n > 0) := BFLY (TWO_SORTER_FLAT n ngt0)
 
-def twoSorterNat : Rel (List.Vector Nat 2) (List.Vector Nat 2) :=
-  fun input output =>
-    output.get ⟨0, by omega⟩ = min (input.get ⟨0, by omega⟩) (input.get ⟨1, by omega⟩) ∧
-    output.get ⟨1, by omega⟩ = max (input.get ⟨0, by omega⟩) (input.get ⟨1, by omega⟩)
-
 /- A 4-input Batcher's bitonic merger for n-bit words.
-   Takes a 4-element vector (2^(1+1) = 4) of Nat values and produces a sorted 4-element vector.
+   Takes a 4-element vector (2^(1+1) = 4) of n-bit Bool words and produces a sorted 4-element vector.
    Unrolling BFLY at degree 1:
      BFLY r 1 = ILV (BFLY r 0) ⨾ EVENS r = ILV r ⨾ EVENS r
-   i.e. unriffle, sor
-   t each half of 2, riffle, then compare-swap adjacent pairs.
+   i.e. unriffle, sort each half of 2, riffle, then compare-swap adjacent pairs.
 -/
-def BATCHER_BITONIC_MERGER_4 :
-    Rel (List.Vector Nat 4) (List.Vector Nat 4) :=
+def BATCHER_BITONIC_MERGER_4 (n : Nat) (ngt0 : n > 0) :
+    Rel (List.Vector (List.Vector Bit n) 4) (List.Vector (List.Vector Bit n) 4) :=
   have h : 2 ^ (1 + 1) = 4 := by norm_num
-  h ▸ BFLY twoSorterNat 1
-
-
-/-
-  Concrete example: BATCHER_BITONIC_MERGER_4 maps the bitonic input [3, 5, 8, 2]
-  to the sorted output [2, 3, 5, 8].
-
-  Input:                 [3, 5, 8, 2]     (bitonic: ascending [3,5,8], descending [8,2])
-  After UNRIFFLE:        [3, 8, 5, 2]     (CHOP → UNZIP → UNHALVE)
-  After TWO sort:        [3, 8, 2, 5]     (HALVE, sort each half [3,8]→[3,8], [5,2]→[2,5], UNHALVE)
-  After RIFFLE:          [3, 2, 8, 5]     (HALVE → ZIP → UNCHOP)
-  After EVENS sort:      [2, 3, 5, 8]     (CHOP, sort pairs [3,2]→[2,3], [8,5]→[5,8], UNCHOP)
--/
-section BMM4_Example
-
-private def bmm4_input  : List.Vector Nat 4 := ⟨[3, 5, 8, 2], rfl⟩
-private def bmm4_output : List.Vector Nat 4 := ⟨[2, 3, 5, 8], rfl⟩
-
-example : BATCHER_BITONIC_MERGER_4 bmm4_input bmm4_output := by
-  show (ILV twoSorterNat ⨾ EVENS twoSorterNat) bmm4_input bmm4_output
-  -- mid = [3, 2, 8, 5] (after ILV, before EVENS)
-  refine ⟨⟨[3, 2, 8, 5], rfl⟩, ?_, ?_⟩
-  · -- ILV = UNRIFFLE ⨾ TWO twoSorterNat ⨾ RIFFLE
-    -- after_unriffle = [3, 8, 5, 2], after_two = [3, 8, 2, 5]
-    refine ⟨⟨[3, 8, 5, 2], rfl⟩, ?_, ⟨[3, 8, 2, 5], rfl⟩, ?_, ?_⟩
-    · -- UNRIFFLE = CHOP ⨾ UNZIP ⨾ UNHALVE
-      refine ⟨⟨[⟨[3, 5], rfl⟩, ⟨[8, 2], rfl⟩], rfl⟩, ?_, ⟨[⟨[3, 8], rfl⟩, ⟨[5, 2], rfl⟩], rfl⟩, ?_, ?_⟩
-      · intro i j; fin_cases i <;> fin_cases j <;> rfl
-      · intro j i; fin_cases j <;> fin_cases i <;> rfl
-      · exact ⟨fun i => by fin_cases i <;> rfl, fun i => by fin_cases i <;> rfl⟩
-    · -- TWO = HALVE ⨾ MAP twoSorterNat ⨾ UNHALVE
-      refine ⟨⟨[⟨[3, 8], rfl⟩, ⟨[5, 2], rfl⟩], rfl⟩, ?_, ⟨[⟨[3, 8], rfl⟩, ⟨[2, 5], rfl⟩], rfl⟩, ?_, ?_⟩
-      · exact ⟨fun i => by fin_cases i <;> rfl, fun i => by fin_cases i <;> rfl⟩
-      · intro i; fin_cases i <;> exact ⟨by decide, by decide⟩
-      · exact ⟨fun i => by fin_cases i <;> rfl, fun i => by fin_cases i <;> rfl⟩
-    · -- RIFFLE = HALVE ⨾ ZIP ⨾ UNCHOP
-      refine ⟨⟨[⟨[3, 8], rfl⟩, ⟨[2, 5], rfl⟩], rfl⟩, ?_, ⟨[⟨[3, 2], rfl⟩, ⟨[8, 5], rfl⟩], rfl⟩, ?_, ?_⟩
-      · exact ⟨fun i => by fin_cases i <;> rfl, fun i => by fin_cases i <;> rfl⟩
-      · intro i j; fin_cases i <;> fin_cases j <;> rfl
-      · intro i j; fin_cases i <;> fin_cases j <;> rfl
-  · -- EVENS = CHOP ⨾ MAP twoSorterNat ⨾ UNCHOP
-    refine ⟨⟨[⟨[3, 2], rfl⟩, ⟨[8, 5], rfl⟩], rfl⟩, ?_, ⟨[⟨[2, 3], rfl⟩, ⟨[5, 8], rfl⟩], rfl⟩, ?_, ?_⟩
-    · intro i j; fin_cases i <;> fin_cases j <;> rfl
-    · intro i; fin_cases i <;> exact ⟨by decide, by decide⟩
-    · intro i j; fin_cases i <;> fin_cases j <;> rfl
-
-end BMM4_Example
+  h ▸ BFLY (TWO_SORTER_FLAT n ngt0) 1
 
 /-
 Correctness of Batcher's bitonic merger:

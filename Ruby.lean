@@ -39,12 +39,10 @@ example : AND (const1, const0) const0 := fun _ => rfl
 
 example : AND (const1, const1) const1 := fun _ => rfl
 
-/- An NAND gate is a gate that relates the output c to the logical negation of the conjunction of the inputs a and b.
--/
+/- An NAND gate is a gate that relates the output c to the logical negation of the conjunction of the inputs a and b. -/
 def NAND : Rel (Bit × Bit) Bit := fun (a, b) c => ∀ t, c t = !((a t) && (b t))
 
-/- An OR gate is a gate that relates the output c to the logical disjunction of the inputs a and b.
--/
+/- An OR gate is a gate that relates the output c to the logical disjunction of the inputs a and b. -/
 def OR : Rel (Bit × Bit) Bit := fun (a, b) c => ∀ t, c t = ((a t) || (b t))
 
 example : OR (const0, const0) const0 := fun _ => rfl
@@ -55,12 +53,10 @@ example : OR (const1, const0) const1 := fun _ => rfl
 
 example : OR (const1, const1) const1 := fun _ => rfl
 
-/- A NOR gate is a gate that relates the output c to the logical negation of the disjunction of the inputs a and b.
--/
+/- A NOR gate is a gate that relates the output c to the logical negation of the disjunction of the inputs a and b. -/
   def NOR : Rel (Bit × Bit) Bit := fun (a, b) c => ∀ t, c t = !((a t) || (b t))
 
-/- An XOR gate is a gate that relates the output c to the logical exclusive-or of the inputs a and b.
--/
+/- An XOR gate is a gate that relates the output c to the logical exclusive-or of the inputs a and b. -/
   def XOR : Rel (Bit × Bit) Bit :=
     fun (a, b) c => ∀ t, c t = (xor (a t) (b t))
 
@@ -77,8 +73,7 @@ example : XOR (const1, const1) const0 := fun _ => rfl
   def XNOR : Rel (Bit × Bit) Bit :=
     fun (a, b) c => ∀ t, c t = !(xor (a t) (b t))
 
-/- Define an infix left-to-rightoperator for sequential composition of relations (circuits).
--/
+/- Define an infix left-to-rightoperator for sequential composition of relations (circuits). -/
 infixr:60 " ⨾ " => Relation.Comp
 
 /- Series composition is associative. -/
@@ -222,7 +217,7 @@ def CHOP {n : Nat} : Rel (List.Vector α (2 * n)) (List.Vector (List.Vector α 2
     ∀ (i : Fin n) (j : Fin 2),
       (pairs.get i).get j = v.get ⟨2 * i.val + j.val, by omega⟩
 
--- UNCHOP is the inverse of CHOP: it flattens n sub-vectors of length 2 back into a vector of length 2*n.
+/- UNCHOP is the inverse of CHOP: it flattens n sub-vectors of length 2 back into a vector of length 2*n. -/
 def UNCHOP {n : Nat} : Rel (List.Vector (List.Vector α 2) n) (List.Vector α (2 * n)) :=
   fun pairs v =>
     ∀ (i : Fin n) (j : Fin 2),
@@ -248,6 +243,126 @@ def TWO {n : Nat} (r : Rel (List.Vector α n) (List.Vector α n)) : Rel (List.Ve
 
 def ILV {n : Nat} (r : Rel (List.Vector α n) (List.Vector α n)) : Rel (List.Vector α (2 * n)) (List.Vector α (2 * n))
   := UNRIFFLE ⨾ TWO r ⨾ RIFFLE
+
+theorem halve_unhalve {n : Nat} {α : Type} :
+    (HALVE ⨾ UNHALVE : Rel (List.Vector α (2 * n)) (List.Vector α (2 * n))) = id := by
+  ext v w; simp only [Relation.Comp, id]; unfold HALVE UNHALVE; constructor
+  · rintro ⟨h, ⟨hh0, hh1⟩, hu0, hu1⟩
+    apply List.Vector.ext; intro j; by_cases hjn : j.val < n
+    · have := hu0 ⟨j.val, hjn⟩; have := hh0 ⟨j.val, hjn⟩
+      have : (⟨j.val, by omega⟩ : Fin (2 * n)) = j := Fin.ext rfl; simp_all
+    · push_neg at hjn
+      have := hu1 ⟨j.val - n, by omega⟩; have := hh1 ⟨j.val - n, by omega⟩
+      have : (⟨n + (j.val - n), by omega⟩ : Fin (2 * n)) = j :=
+        Fin.ext (Nat.add_sub_cancel' hjn); simp_all
+  · intro heq; subst heq
+    have mk_bound (j : Fin 2) (i : Fin n) : j.val * n + i.val < 2 * n := by
+      have := j.isLt; have := i.isLt; nlinarith
+    refine ⟨List.Vector.ofFn (fun j : Fin 2 =>
+        List.Vector.ofFn (fun i : Fin n => v.get ⟨j.val * n + i.val, mk_bound j i⟩)),
+      ⟨fun i => ?_, fun i => ?_⟩, fun i => ?_, fun i => ?_⟩
+    all_goals simp [List.Vector.get_ofFn]
+
+theorem unchop_chop {n : Nat} {α : Type} :
+    (UNCHOP ⨾ CHOP : Rel (List.Vector (List.Vector α 2) n) (List.Vector (List.Vector α 2) n)) = id := by
+  ext v w; simp only [Relation.Comp, id]; unfold UNCHOP CHOP; constructor
+  · rintro ⟨flat, huc, hch⟩
+    apply List.Vector.ext; intro i; apply List.Vector.ext; intro j
+    have := huc i j; have := hch i j; simp_all
+  · intro heq; subst heq
+    refine ⟨List.Vector.ofFn (fun k : Fin (2 * n) =>
+        (v.get ⟨k.val / 2, by omega⟩).get ⟨k.val % 2, by omega⟩),
+      fun i j => ?_, fun i j => ?_⟩
+    · simp only [List.Vector.get_ofFn]
+      have h1 : (2 * i.val + j.val) / 2 = i.val := by omega
+      have h2 : (2 * i.val + j.val) % 2 = j.val := by omega
+      congr 1
+      · congr 1; exact Fin.ext h1
+      · exact Fin.ext h2
+    · simp only [List.Vector.get_ofFn]
+      have h1 : i.val = (2 * i.val + j.val) / 2 := by omega
+      have h2 : j.val = (2 * i.val + j.val) % 2 := by omega
+      congr 1
+      · congr 1; exact Fin.ext h1
+      · exact Fin.ext h2
+
+theorem zip_unzip {n : Nat} {α : Type} :
+    (ZIP ⨾ UNZIP : Rel (List.Vector (List.Vector α n) 2) (List.Vector (List.Vector α n) 2)) = id := by
+  ext v w; simp only [Relation.Comp, id]; unfold ZIP UNZIP; constructor
+  · rintro ⟨z, hz, hu⟩
+    apply List.Vector.ext; intro j; apply List.Vector.ext; intro i
+    have := hz i j; have := hu j i; simp_all
+  · intro heq; subst heq
+    exact ⟨List.Vector.ofFn (fun i => List.Vector.ofFn (fun j => (v.get j).get i)),
+      fun i j => by simp [List.Vector.get_ofFn],
+      fun j i => by simp [List.Vector.get_ofFn]⟩
+
+theorem riffle_unriffle {n : Nat} {α : Type} :
+    (RIFFLE ⨾ UNRIFFLE : Rel (List.Vector α (2 * n)) (List.Vector α (2 * n))) = id := by
+  unfold RIFFLE UNRIFFLE
+  calc (HALVE ⨾ ZIP ⨾ UNCHOP) ⨾ (CHOP ⨾ UNZIP ⨾ UNHALVE)
+      = HALVE ⨾ (ZIP ⨾ (UNCHOP ⨾ (CHOP ⨾ (UNZIP ⨾ UNHALVE)))) := by
+        simp only [Relation.comp_assoc]
+    _ = HALVE ⨾ (ZIP ⨾ ((UNCHOP ⨾ CHOP) ⨾ (UNZIP ⨾ UNHALVE))) := by
+        rw [← Relation.comp_assoc (r := UNCHOP)]
+    _ = HALVE ⨾ (ZIP ⨾ (id ⨾ (UNZIP ⨾ UNHALVE))) := by rw [unchop_chop]
+    _ = HALVE ⨾ (ZIP ⨾ (UNZIP ⨾ UNHALVE)) := by rw [ruby_id_seq_left]
+    _ = HALVE ⨾ ((ZIP ⨾ UNZIP) ⨾ UNHALVE) := by rw [← Relation.comp_assoc (r := ZIP)]
+    _ = HALVE ⨾ (id ⨾ UNHALVE) := by rw [zip_unzip]
+    _ = HALVE ⨾ UNHALVE := by rw [ruby_id_seq_left]
+    _ = id := halve_unhalve
+
+theorem map_seq_dist {k : Nat} {α β γ : Type} (f : Rel α β) (g : Rel β γ) :
+    MAP (f ⨾ g) = (MAP f ⨾ MAP g : Rel (List.Vector α k) (List.Vector γ k)) := by
+  ext v w; simp only [Relation.Comp]; unfold MAP; simp only [Relation.Comp]; constructor
+  · intro h
+    choose mids hf hg using h
+    exact ⟨List.Vector.ofFn mids,
+      fun i => by rw [List.Vector.get_ofFn]; exact hf i,
+      fun i => by rw [List.Vector.get_ofFn]; exact hg i⟩
+  · intro ⟨mid, hf, hg⟩ i
+    exact ⟨mid.get i, hf i, hg i⟩
+
+theorem unhalve_halve {n : Nat} {α : Type} :
+    (UNHALVE ⨾ HALVE : Rel (List.Vector (List.Vector α n) 2) (List.Vector (List.Vector α n) 2)) = id := by
+  ext v w; simp only [Relation.Comp, id]; unfold UNHALVE HALVE; constructor
+  · rintro ⟨u, ⟨hu0, hu1⟩, hh0, hh1⟩
+    apply List.Vector.ext; intro j; apply List.Vector.ext; intro i; fin_cases j
+    · have := hh0 i; have := hu0 i; simp_all
+    · have := hh1 i; have := hu1 i; simp_all
+  · intro heq; subst heq
+    refine ⟨List.Vector.ofFn (fun k : Fin (2 * n) =>
+        if h : k.val < n then (v.get ⟨0, by omega⟩).get ⟨k.val, h⟩
+        else (v.get ⟨1, by omega⟩).get ⟨k.val - n, by omega⟩),
+      ⟨fun i => ?_, fun i => ?_⟩, fun i => ?_, fun i => ?_⟩
+    · simp only [List.Vector.get_ofFn, i.isLt, ↓reduceDIte]
+    · simp only [List.Vector.get_ofFn, show ¬(n + i.val < n) from by omega, ↓reduceDIte]
+      have h : n + i.val - n = i.val := by omega
+      congr 1; exact Fin.ext h
+    · simp only [List.Vector.get_ofFn, i.isLt, ↓reduceDIte]
+    · simp only [List.Vector.get_ofFn, show ¬(n + i.val < n) from by omega, ↓reduceDIte]
+      have h : i.val = n + i.val - n := by omega
+      congr 1; exact Fin.ext h
+
+theorem two_seq_dist {n : Nat} {α : Type} (f g : Rel (List.Vector α n) (List.Vector α n)) :
+    TWO (f ⨾ g) = TWO f ⨾ TWO g := by
+  unfold TWO
+  calc (HALVE ⨾ MAP (f ⨾ g) ⨾ UNHALVE)
+      = HALVE ⨾ (MAP f ⨾ MAP g) ⨾ UNHALVE := by rw [map_seq_dist]
+    _ = HALVE ⨾ (MAP f ⨾ (MAP g ⨾ UNHALVE)) := by simp only [Relation.comp_assoc]
+    _ = (HALVE ⨾ MAP f ⨾ UNHALVE) ⨾ (HALVE ⨾ MAP g ⨾ UNHALVE) := by
+        simp only [Relation.comp_assoc]; congr 1; congr 1
+        rw [← Relation.comp_assoc (r := UNHALVE),
+            ← Relation.comp_assoc (r := UNHALVE ⨾ HALVE),
+            unhalve_halve, ruby_id_seq_left]
+
+/- ILV distributes over series composition. -/
+theorem ilv_seq_dist {n : Nat} {α : Type} (f g : Rel (List.Vector α n) (List.Vector α n)) :
+    ILV (f ⨾ g) = ILV f ⨾ ILV g := by
+  unfold ILV; rw [two_seq_dist]; simp only [Relation.comp_assoc]; congr 1; congr 1
+  rw [← Relation.comp_assoc (r := RIFFLE),
+      ← Relation.comp_assoc (r := RIFFLE ⨾ UNRIFFLE),
+      riffle_unriffle, ruby_id_seq_left]
 
 /-
 CONCAT flattens a vector of n vectors (each of length m) into a single vector of length n*m.
