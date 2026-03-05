@@ -198,7 +198,8 @@ Key:
 -/
 
 /- A ripple-carry adder is made by making a COL of FULL_ADDERs. -/
-def ADDER (n : Nat) (ngt0 : n > 0) : Rel (Bit × List.Vector (Bit × Bit) n) (List.Vector Bit n × Bit) :=
+def ADDER (n : Nat) (ngt0 : n > 0) : Rel (Bit × List.Vector (Bit × Bit) n)
+                                         (List.Vector Bit n × Bit) :=
     COL ngt0 FULL_ADDER
 
 /- Correctness of 1-bit ADDER. -/

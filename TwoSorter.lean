@@ -17,6 +17,8 @@ def TWO_SORTER (n : Nat) (ngt0 : n > 0) : Rel (List.Vector (Bit × Bit) n) (List
         MUX2_1 (a_gt_b, ((ab.get i).1, (ab.get i).2)) (out.get i).1 ∧
         MUX2_1 (not_a_gt_b, ((ab.get i).1, (ab.get i).2)) (out.get i).2
 
+  def TWO_SORTER_REG n ngt0 := TWO_SORTER n ngt0 ⨾ MAP ((DELAY false) ‖ (DELAY false))
+
 /- Correctness of the TWO_SORTER: for n-bit unsigned inputs a and b, the first output
    component is min(a, b) and the second output component is max(a, b). -/
 theorem TWO_SORTER_correct : ∀ (n : Nat) (ngt0 : n > 0) (a b : List.Vector Bit n)
@@ -93,5 +95,7 @@ theorem TWO_SORTER_FLAT_correct : ∀ (n : Nat) (ngt0 : n > 0)
     ext i; simp only [List.Vector.get_map]; exact congr_fun (h_out1 i) t
   simp only [hv0, hv1]
   exact h_correct
+
+  def TWO_SORTER_FLAT_REG n ngt0 := TWO_SORTER_FLAT n ngt0 ⨾ MAP (MAP (DELAY false))
 
 end Ruby

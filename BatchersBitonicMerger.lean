@@ -87,4 +87,36 @@ theorem BATCHER_BITONIC_MERGER_correct : ∀ (n : Nat) (ngt0 : n > 0) (m : Nat)
     intro input output t h_bitonic h_merger
     sorry
 
+  def BATCHER_BITONIC_SORTER (n : Nat) (ngt0 : n > 0) :
+      (m : Nat) → Rel (List.Vector (List.Vector Bit n) (2 ^ (m + 1)))
+                       (List.Vector (List.Vector Bit n) (2 ^ (m + 1)))
+    | 0 => TWO_SORTER_FLAT n ngt0
+    | m + 1 =>
+      have h : 2 * 2 ^ (m + 1) = 2 ^ ((m + 1) + 1) := by ring
+      (h ▸ (TWO (BATCHER_BITONIC_SORTER n ngt0 m) ⨾ SNDV REV)) ⨾
+      BFLY (TWO_SORTER_FLAT n ngt0) (m + 1)
+
+/-
+Correctness of Batcher's bitonic sorter:
+For any input, the output is sorted (non-decreasing by word value at time t).
+The proof proceeds by induction on the depth m:
+  - Base case (m = 0): TWO_SORTER_FLAT sorts any 2-element input.
+  - Inductive case (m + 1): By the inductive hypothesis, both halves are sorted
+    after TWO (BATCHER_BITONIC_SORTER n ngt0 m). Reversing the second half via
+    SNDV REV produces a bitonic sequence. Then BATCHER_BITONIC_MERGER_correct
+    guarantees the bitonic merger produces a sorted output.
+-/
+theorem BATCHER_BITONIC_SORTER_correct : ∀ (n : Nat) (ngt0 : n > 0) (m : Nat)
+    (input output : List.Vector (List.Vector Bit n) (2 ^ (m + 1))) (t : Nat),
+  BATCHER_BITONIC_SORTER n ngt0 m input output →
+  IsSorted output t := by
+  intro n ngt0 m
+  induction m with
+  | zero =>
+    intro input output t h_sorter
+    exact bfly_base_case n ngt0 input output t h_sorter
+  | succ m ih =>
+    intro input output t h_sorter
+    sorry
+
 end Ruby

@@ -14,11 +14,11 @@ abbrev Bit := Nat → Bool
 
 /- A wire that has a constant value of false.
 -/
-def const0 (_ : Nat) : Bool := false
+def const0 (_ : ℕ) : Bool := false
 
 /- A wire that has a constant value of true.
 -/
-def const1 (_ : Nat) : Bool := true
+def const1 (_ : ℕ) : Bool := true
 
 /- An invertor is a gate that relates the output b to the negation of the input a.
 -/
@@ -83,7 +83,8 @@ theorem series_assoc {R : Rel α β} {S : Rel β γ} {T : Rel γ δ} :
 /- Relational inverse: swap the arguments of a relation. -/
 postfix:max "⁻¹" => flip
 
-/- Algebraic law: The inverse of a series composition is the reverse series composition of the inverses. (R ⨾ S)⁻¹ = (S⁻¹ ⨾ R⁻¹) -/
+/- Algebraic law: The inverse of a series composition is the reverse series composition of the inverses.
+   (R ⨾ S)⁻¹ = (S⁻¹ ⨾ R⁻¹) -/
 theorem ruby_inv_seq {α β γ : Type} (R : Rel α β) (S : Rel β γ) :
   (R ⨾ S)⁻¹ = (S⁻¹ ⨾ R⁻¹) := by exact Relation.flip_comp
 
@@ -97,7 +98,8 @@ def parComp (R : Rel α β) (S : Rel γ δ) : Rel (α × γ) (β × δ) :=
 
 infixr:55 " ‖ " => parComp
 
-/- Algebraic law: The inverse of a parallel composition is the parallel composition of the inverses. (R ‖ S)⁻¹ = (R⁻¹ ‖ S⁻¹) -/
+/- Algebraic law: The inverse of a parallel composition is the parallel composition of the inverses.
+   (R ‖ S)⁻¹ = (R⁻¹ ‖ S⁻¹) -/
 theorem ruby_inv_par {α β γ δ : Type} (R : Rel α β) (S : Rel γ δ) :
   (R ‖ S)⁻¹ = (R⁻¹ ‖ S⁻¹) := by ext ⟨b, d⟩ ⟨a, c⟩; rfl
 
@@ -124,11 +126,11 @@ theorem ruby_inv_id {α : Type} :
     intro a b c t ⟨d, hd1, hd2⟩
     rw [hd2 t, hd1 t]
 
-def alt2_NAND : Rel ((Nat → Bool) × (Nat → Bool)) (Nat → Bool) := fun (a, b) c => ∃ x, AND (a, b) x ∧ INV x c
+def alt2_NAND : Rel (Bit × Bit) Bit := fun (a, b) c => ∃ x, AND (a, b) x ∧ INV x c
 
 /- Define a unit delay element for which the output is related to the input one clock cycle ago.
    A default value defines the output at t=0 (i.e. the reset value). -/
-def DELAY {α : Type} : α → Rel (Nat → α) (Nat → α) :=
+def DELAY {α : Type} : α → Rel (ℕ → α) (ℕ → α) :=
     fun resetValue d q => ∀ t, if t = 0 then q 0 = resetValue else q t = d (t - 1)
 
 /-  Define a loop combinator for expressing feedback loops for sequential circuits.
@@ -147,7 +149,7 @@ def DELAY {α : Type} : α → Rel (Nat → α) (Nat → α) :=
   a : α      ----|        |---- c : γ
                  |        |
                  ----------
-  -/
+-/
 def LOOP {α β γ : Type} : (Rel (α × β) (γ × β)) → Rel (α × β) (γ × β) :=
     fun r (a, b) (c, d) => r (a, b) (c, d) ∧ b = d
 
@@ -160,11 +162,23 @@ example : FORK const1 (const1, const1) := by simp [FORK]
 
 example : FORK const0 (const0, const0) := by simp [FORK]
 
+/- Reverse the elements in a vector.  -/
+def REV {α : Type} : Rel (List.Vector α n) (List.Vector α n)
+  := fun v w => w = List.Vector.reverse v
+
 /- The FST combinator applies the first higher order circuit argument to the first element of a pair. The second element is left unchanged. -/
   def FST {α β γ : Type} : Rel α γ → Rel (α × β) (γ × β) := fun r (a, b) (c, d) => r a c ∧ d = b
 
 /- The SND combinator appllies the first higher order circuit argument to the second element of a pair. The first element is left unchanged. -/
 def SND {α β γ : Type} : Rel β γ → Rel (α × β) (α × γ) := fun r (a, b) (c, d) => r b d ∧ a = c
+
+/- VSND applies a relation to the second element of a 2-element vector, leaving the first unchanged.
+   This is the List.Vector analogue of SND for Prod types. -/
+def VSND (r : Rel α α) : Rel (List.Vector α 2) (List.Vector α 2) :=
+  fun v w => w.get ⟨0, by omega⟩ = v.get ⟨0, by omega⟩ ∧
+             r (v.get ⟨1, by omega⟩) (w.get ⟨1, by omega⟩)
+
+
 
 /- The below combinator places the circuit r below the circuit s, composing them with a vertical wire. -/
 def BELOW {α β γ δ ε ζ θ : Type} : Rel (α × β) (δ × θ) → Rel (θ ×  γ) (ε × ζ) → Rel (α × (β × γ)) ((δ × ε) × ζ) := fun r s (a, (b, c)) ((d, e), f) => ∃ h, r (a, b) (d, h) ∧ s (h, c) (e, f)
@@ -191,6 +205,10 @@ def UNHALVE {n : Nat} : Rel (List.Vector (List.Vector α n) 2) (List.Vector α (
   fun halves v =>
     (∀ (i : Fin n), v.get ⟨i.val, by omega⟩ = (halves.get ⟨0, by omega⟩).get i) ∧
     (∀ (i : Fin n), v.get ⟨n + i.val, by omega⟩ = (halves.get ⟨1, by omega⟩).get i)
+
+def SNDV (r : Rel (List.Vector α n) (List.Vector α n)) :
+    Rel (List.Vector α (2 * n)) (List.Vector α (2 * n)) :=
+  HALVE ⨾ VSND r ⨾ UNHALVE
 
 /-
 ZIP transposes a 2×n structure into an n×2 structure.
@@ -353,6 +371,7 @@ theorem unhalve_halve {n : Nat} {α : Type} :
       have h : i.val = n + i.val - n := by omega
       congr 1; exact Fin.ext h
 
+/- TWO distributes over series composition. -/
 theorem two_seq_dist {n : Nat} {α : Type} (f g : Rel (List.Vector α n) (List.Vector α n)) :
     TWO (f ⨾ g) = TWO f ⨾ TWO g := by
   unfold TWO
